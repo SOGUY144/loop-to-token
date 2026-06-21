@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loop2local — Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="map.html" class="nav-brand">
+            <div class="nav-brand-icon" style="background:none;overflow:hidden">
+                <img src="Logo.png" alt="Loop2local" style="width:100%;height:100%;object-fit:contain;border-radius:6px">
+            </div>
+            <span>Loop2local</span>
+        </a>
+        <div class="nav-links">
+            <a href="map.html" class="nav-link" data-i="navMap">ค้นหาจุดบริจาค</a>
+            <a href="donate.html" class="nav-link" data-i="navDonate">ยืนยันการบริจาค</a>
+            <a href="points.html" class="nav-link" data-i="navPoints">คะแนนสะสม</a>
+            <a href="admin.html" class="nav-link active" data-i="navAdmin">จัดการระบบ</a>
+        </div>
+        <button class="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+        <div class="nav-controls">
+            <div class="nav-user-area"></div>
+            <div class="lang-toggle"><button class="lang-btn active" data-lang="th">TH</button><button class="lang-btn" data-lang="en">EN</button></div>
+            <button class="theme-toggle"><svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg><svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg></button>
+            <button class="btn-logout" data-i="logout">ออกจากระบบ</button>
+        </div>
+    </nav>
+    <div class="nav-mobile-menu" id="mobileMenu">
+        <a href="map.html" class="nav-link" data-i="navMap">ค้นหาจุดบริจาค</a>
+        <a href="donate.html" class="nav-link" data-i="navDonate">ยืนยันการบริจาค</a>
+        <a href="points.html" class="nav-link" data-i="navPoints">คะแนนสะสม</a>
+        <a href="admin.html" class="nav-link active" data-i="navAdmin">จัดการระบบ</a>
+        <a href="#" class="nav-link" style="color:var(--red)" onclick="document.querySelector('.btn-logout')?.click()" data-i="logout">ออกจากระบบ</a>
+    </div>
+    <div class="page">
+        <h1 class="page-title anim">แดชบอร์ดผู้ดูแล</h1>
+        <div class="admin-stats anim anim-d1">
+            <div class="admin-stat"><div class="num" id="adStat1">0</div><div class="lbl">สมาชิกทั้งหมด</div></div>
+            <div class="admin-stat"><div class="num" id="adStat2">0</div><div class="lbl">คะแนนรวม</div></div>
+            <div class="admin-stat"><div class="num" id="adStat3">0</div><div class="lbl">อนุมัติแล้ว</div></div>
+            <div class="admin-stat"><div class="num" id="adStat4">0</div><div class="lbl">ปฏิเสธ</div></div>
+        </div>
+        <div class="anim anim-d2" style="margin-bottom:28px">
+            <h2 class="section-head">📋 รายการรอตรวจสอบ</h2>
+            <div id="pendingList"><div class="empty-state">✅ ระบบ AI อนุมัติอัตโนมัติ</div></div>
+        </div>
+        <div class="anim anim-d3" style="margin-bottom:28px">
+            <h2 class="section-head">📜 ประวัติทั้งหมด</h2>
+            <div id="allSubmissions"><div class="empty-state">ยังไม่มีรายการ</div></div>
+        </div>
+        <div class="admin-table-wrap anim anim-d3">
+            <table class="admin-table">
+                <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>บทบาท</th><th>คะแนน</th><th>วันที่สมัคร</th></tr></thead>
+                <tbody id="adminTable"></tbody>
+            </table>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

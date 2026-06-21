@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loop2local — แผนที่จุดบริจาค</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <nav class="navbar">
+        <a href="map.html" class="nav-brand">
+            <div class="nav-brand-icon" style="background:none;overflow:hidden">
+                <img src="Logo.png" alt="Loop2local" style="width:100%;height:100%;object-fit:contain;border-radius:6px">
+            </div>
+            <span>Loop2local</span>
+        </a>
+        <div class="nav-links">
+            <a href="map.html" class="nav-link active" data-i="navMap">ค้นหาจุดบริจาค</a>
+            <a href="donate.html" class="nav-link" data-i="navDonate">ยืนยันการบริจาค</a>
+            <a href="points.html" class="nav-link" data-i="navPoints">คะแนนสะสม</a>
+            <a href="admin.html" class="nav-link admin-only" data-i="navAdmin">จัดการระบบ</a>
+        </div>
+        <button class="nav-hamburger" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-controls">
+            <div class="nav-user-area"></div>
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="th">TH</button>
+                <button class="lang-btn" data-lang="en">EN</button>
+            </div>
+            <button class="theme-toggle">
+                <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+                <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+            </button>
+            <button class="btn-logout" data-i="logout">ออกจากระบบ</button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="nav-mobile-menu" id="mobileMenu">
+        <a href="map.html" class="nav-link active" data-i="navMap">ค้นหาจุดบริจาค</a>
+        <a href="donate.html" class="nav-link" data-i="navDonate">ยืนยันการบริจาค</a>
+        <a href="points.html" class="nav-link" data-i="navPoints">คะแนนสะสม</a>
+        <a href="admin.html" class="nav-link admin-only" data-i="navAdmin">จัดการระบบ</a>
+        <a href="#" class="nav-link" style="color:var(--red)" onclick="document.querySelector('.btn-logout')?.click()" data-i="logout">ออกจากระบบ</a>
+    </div>
+
+    <div class="page">
+        <h1 class="page-title anim" data-i="mapTitle">ค้นหาจุดบริจาคใกล้คุณ — โซนสามย่าน</h1>
+
+        <div class="map-wrap anim anim-d1">
+            <div id="map"></div>
+            <div class="map-sidebar">
+                <div class="sidebar-title" data-i="mapSidebar">จุดบริจาค — โซนสามย่าน</div>
+
+                <div class="loc-card" data-lat="13.7330" data-lng="100.5290">
+                    <div class="loc-icon">♻️</div>
+                    <div class="loc-info">
+                        <div class="loc-name">สามย่านมิตรทาวน์</div>
+                        <div class="loc-addr">ถ.พระราม 4 แขวงวังใหม่ ปทุมวัน</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">50 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7330,100.5290&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7383" data-lng="100.5322">
+                    <div class="loc-icon">🏛️</div>
+                    <div class="loc-info">
+                        <div class="loc-name">จุฬาลงกรณ์มหาวิทยาลัย (หอประชุม)</div>
+                        <div class="loc-addr">ถ.พญาไท แขวงวังใหม่ ปทุมวัน</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">200 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7383,100.5322&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7335" data-lng="100.5295">
+                    <div class="loc-icon">🏪</div>
+                    <div class="loc-info">
+                        <div class="loc-name">Samyan CO-OP</div>
+                        <div class="loc-addr">ชั้น 2 สามย่านมิตรทาวน์</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">50 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7335,100.5295&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7310" data-lng="100.5310">
+                    <div class="loc-icon">🌳</div>
+                    <div class="loc-info">
+                        <div class="loc-name">อุทยาน 100 ปี จุฬาฯ</div>
+                        <div class="loc-addr">ซ.จุฬา 5 ถ.พระราม 4</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">300 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7310,100.5310&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7355" data-lng="100.5340">
+                    <div class="loc-icon">🛒</div>
+                    <div class="loc-info">
+                        <div class="loc-name">ตลาดสามย่าน</div>
+                        <div class="loc-addr">ซ.จุฬา 32-34 ถ.บรรทัดทอง</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">400 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7355,100.5340&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7350" data-lng="100.5275">
+                    <div class="loc-icon">🏫</div>
+                    <div class="loc-info">
+                        <div class="loc-name">จามจุรีสแควร์</div>
+                        <div class="loc-addr">ถ.พญาไท แขวงวังใหม่ ปทุมวัน</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">150 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7350,100.5275&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7395" data-lng="100.5305">
+                    <div class="loc-icon">🏫</div>
+                    <div class="loc-info">
+                        <div class="loc-name">โรงเรียนสาธิตจุฬาฯ</div>
+                        <div class="loc-addr">ซ.จุฬา 11 ถ.พญาไท</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">350 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7395,100.5305&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+
+                <div class="loc-card" data-lat="13.7328" data-lng="100.5285">
+                    <div class="loc-icon">🚇</div>
+                    <div class="loc-info">
+                        <div class="loc-name">MRT สามย่าน</div>
+                        <div class="loc-addr">ถ.พระราม 4 (ทางออก 2)</div>
+                    </div>
+                    <div class="loc-actions">
+                        <span class="loc-dist">80 m</span>
+                        <a class="btn-navigate" href="https://www.google.com/maps/dir/?api=1&destination=13.7328,100.5285&travelmode=walking" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 16 16" fill="none"><path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            นำทาง
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

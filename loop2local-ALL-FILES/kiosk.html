@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Loop2local — Smart Bin</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="qrcode.min.js"></script>
+    <style>
+        /* ===== Kiosk-only styles — ปุ่มใหญ่ ตัวอักษรใหญ่ สำหรับจอสัมผัส ===== */
+        html, body {
+            margin: 0; padding: 0; overflow: hidden;
+            height: 100vh; width: 100vw;
+            background: linear-gradient(135deg, var(--g-900), var(--g-700));
+            font-family: var(--font);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .kiosk-wrap {
+            height: 100vh; width: 100vw;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: white; text-align: center;
+            padding: 40px; box-sizing: border-box;
+        }
+        .kiosk-screen { display: none; width: 100%; max-width: 720px; }
+        .kiosk-screen.show { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+
+        .kiosk-logo { width: 90px; height: 90px; border-radius: 20px; object-fit: contain; background: white; padding: 10px; }
+        .kiosk-title { font-size: 2.6rem; font-weight: 800; margin: 0; }
+        .kiosk-sub { font-size: 1.3rem; opacity: 0.85; margin: 0; font-weight: 500; }
+
+        .pulse-ring {
+            width: 160px; height: 160px; border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.4);
+            display: flex; align-items: center; justify-content: center;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
+            70% { box-shadow: 0 0 0 30px rgba(255,255,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+        .bottle-icon { font-size: 4.5rem; }
+
+        .point-counter {
+            font-size: 6rem; font-weight: 800;
+            font-family: var(--mono);
+            color: var(--g-200);
+            line-height: 1;
+        }
+        .point-label { font-size: 1.4rem; font-weight: 600; opacity: 0.9; }
+        .bottle-tally { font-size: 1.1rem; opacity: 0.75; }
+
+        .timeout-bar-wrap {
+            width: 280px; height: 8px; border-radius: 99px;
+            background: rgba(255,255,255,0.2); overflow: hidden;
+        }
+        .timeout-bar { height: 100%; background: var(--g-400); width: 100%; transition: width 0.1s linear; }
+
+        .qr-card {
+            background: white; border-radius: 24px; padding: 28px;
+            box-shadow: var(--shadow-xl);
+        }
+        #qrCanvas { display: block; border-radius: 12px; }
+
+        .claimed-check {
+            width: 120px; height: 120px; border-radius: 50%;
+            background: var(--g-500);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 4rem;
+            animation: pop 0.4s ease;
+        }
+        @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .btn-kiosk-reset {
+            margin-top: 12px; padding: 16px 36px; font-size: 1.1rem; font-weight: 700;
+            background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 99px; cursor: pointer;
+        }
+
+        /* ===== Slideshow — วนรูปก่อนมีคนใช้งาน เหมือนตู้ขายของอัตโนมัติ ===== */
+        #screenSlideshow {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            margin: 0; padding: 0; max-width: none;
+            cursor: pointer; z-index: 100;
+        }
+        #screenSlideshow.show { display: block; } /* ทับ flex ของ .kiosk-screen.show เพราะเป็น full-bleed */
+        .slide-img-wrap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; transition: opacity 1s ease; overflow: hidden;
+        }
+        .slide-img-wrap.active { opacity: 1; }
+        .slide-img-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; filter: blur(30px) brightness(0.6); transform: scale(1.1);
+        }
+        .slide-img-fg {
+            position: relative; width: 100%; height: 100%;
+            object-fit: contain; /* รูปเต็มภาพไม่ถูกครอป ไม่ว่าจะเป็น portrait หรือ landscape */
+        }
+        .slide-tap-hint {
+            position: absolute; bottom: 40px; left: 0; right: 0;
+            text-align: center; color: white; font-size: 1.2rem; font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            animation: tapPulse 1.6s infinite;
+            pointer-events: none;
+        }
+        @keyframes tapPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+        .slide-empty-state {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white; gap: 16px;
+            background: linear-gradient(135deg, var(--g-900), var(--g-700));
+        }
+        .test-mode-hint {
+            position: fixed; bottom: 12px; right: 16px; z-index: 200;
+            color: rgba(255,255,255,0.45); font-size: 0.8rem; font-family: var(--mono);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div class="kiosk-wrap">
+
+    <!-- ===== หน้า 0: Slideshow — วนรูปวิธีใช้/โฆษณา ก่อนมีคนใช้งาน ===== -->
+    <!-- แตะที่ไหนบนจอนี้ก็ได้ → เข้า screenIdle (รอใส่ขวด) -->
+    <div class="kiosk-screen show" id="screenSlideshow" onclick="enterIdleFromSlideshow()">
+        <!-- รูปจะถูก inject เข้ามาที่นี่ผ่าน JS จาก SLIDESHOW_IMAGES ด้านล่าง -->
+        <div class="slide-empty-state" id="slideEmptyState">
+            <img src="Logo.png" class="kiosk-logo" alt="Loop2local">
+            <h1 class="kiosk-title" style="font-size:2rem">Loop2local Smart Bin</h1>
+            <p class="kiosk-sub">แตะหน้าจอเพื่อเริ่มต้น</p>
+        </div>
+        <div class="slide-tap-hint" id="slideTapHint" style="display:none">แตะหน้าจอเพื่อเริ่มต้น</div>
+    </div>
+
+    <!-- ===== หน้า 1: Idle — รอคนมาทิ้งขวด ===== -->
+    <div class="kiosk-screen" id="screenIdle">
+        <img src="Logo.png" class="kiosk-logo" alt="Loop2local">
+        <h1 class="kiosk-title">นำขวดมาทิ้งที่นี่</h1>
+        <p class="kiosk-sub">แตะหรือหยอดขวดเพื่อเริ่มสะสมคะแนน</p>
+        <div class="pulse-ring"><span class="bottle-icon">♻️</span></div>
+    </div>
+
+    <!-- ===== หน้า 2: กำลังนับขวด/สะสม point ===== -->
+    <div class="kiosk-screen" id="screenCounting">
+        <p class="kiosk-sub">ได้รับคะแนนแล้ว</p>
+        <div class="point-counter" id="pointCounter">0</div>
+        <div class="point-label">คะแนน</div>
+        <div class="bottle-tally" id="bottleTally">0 ขวด</div>
+        <div class="timeout-bar-wrap"><div class="timeout-bar" id="timeoutBar"></div></div>
+        <p class="kiosk-sub" style="font-size:1rem;opacity:0.6">ใส่ขวดต่อได้เรื่อยๆ หรือรอสักครู่เพื่อรับ QR Code</p>
+    </div>
+
+    <!-- ===== หน้า 3: QR Code ให้สแกน ===== -->
+    <div class="kiosk-screen" id="screenQR">
+        <h1 class="kiosk-title" style="font-size:2rem">สแกนเพื่อรับคะแนน</h1>
+        <div class="qr-card"><canvas id="qrCanvas"></canvas></div>
+        <p class="kiosk-sub">คุณได้ <strong id="qrPoints">0</strong> คะแนน จาก <span id="qrBottles">0</span> ขวด</p>
+        <p class="kiosk-sub" style="font-size:1rem;opacity:0.65">เปิดกล้องมือถือแล้วสแกน QR นี้ภายใน 3 นาที</p>
+    </div>
+
+    <!-- ===== หน้า 4: Claim สำเร็จ (ตู้ฟังผลจากมือถือ) ===== -->
+    <div class="kiosk-screen" id="screenClaimed">
+        <div class="claimed-check">✓</div>
+        <h1 class="kiosk-title">รับคะแนนสำเร็จ!</h1>
+        <p class="kiosk-sub">ขอบคุณที่ร่วมลดขยะกับ Loop2local 🌱</p>
+        <button class="btn-kiosk-reset" onclick="resetKiosk()">เริ่มรอบใหม่</button>
+    </div>
+
+</div>
+
+<div class="test-mode-hint">🧪 T = จำลองขวด · Q = ข้าม timeout gen QR ทันที (test mode)</div>
+
+<script>
+/* ============================================
+   Loop2local Kiosk — Display Logic
+   ฟัง Realtime Database ที่ ESP32 เขียนเข้ามา
+   ============================================ */
+
+const FIREBASE_RTDB_CONFIG = {
+    databaseURL: "https://planning-with-ai-45b94-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
+// ===== ตั้งค่าสไลด์โชว์ — แค่ใส่ชื่อไฟล์รูปที่นี่ ไม่ต้องแก้โค้ดส่วนอื่น =====
+// เอารูปไปวางในโฟลเดอร์เดียวกับ kiosk.html แล้วพิมพ์ชื่อไฟล์ใส่ใน array นี้
+// ถ้าปล่อย [] ว่างไว้ จะโชว์หน้า default (โลโก้ + "แตะหน้าจอเพื่อเริ่มต้น") แทน
+const SLIDESHOW_IMAGES = [
+    "slide-leaf.png",
+    "slide-howto.png"
+];
+const SLIDE_DURATION_MS = 5000; // แต่ละรูปโชว์ 5 วิ ก่อนสลับรูปต่อไป
+
+// ใช้ app แยก namespace จาก Firestore app หลัก กันชนกัน
+const rtdbApp = firebase.initializeApp(FIREBASE_RTDB_CONFIG, "kioskRTDB");
+const rtdb = rtdbApp.database();
+
+const SESSION_TIMEOUT_MS = 10000;   // ต้องตรงกับ ESP32 (10 วิ)
+const QR_EXPIRE_MS = 3 * 60 * 1000; // QR หมดอายุ 3 นาที
+
+let currentSessionId = null;
+let currentSessionRef = null;
+let timeoutBarInterval = null;
+let slideIntervalId = null;
+let currentSlideIndex = 0;
+
+const screens = {
+    slideshow: document.getElementById('screenSlideshow'),
+    idle: document.getElementById('screenIdle'),
+    counting: document.getElementById('screenCounting'),
+    qr: document.getElementById('screenQR'),
+    claimed: document.getElementById('screenClaimed'),
+};
+
+function showScreen(name) {
+    Object.values(screens).forEach(el => el.classList.remove('show'));
+    screens[name].classList.add('show');
+
+    if (name === 'slideshow') startSlideshow();
+    else stopSlideshow();
+}
+
+/* ===== Slideshow logic ===== */
+function buildSlideshowDOM() {
+    if (SLIDESHOW_IMAGES.length === 0) return; // ไม่มีรูป → ใช้ default state ที่มีอยู่ใน HTML แล้ว
+
+    document.getElementById('slideEmptyState').style.display = 'none';
+    document.getElementById('slideTapHint').style.display = 'block';
+
+    const container = screens.slideshow;
+    const hintEl = document.getElementById('slideTapHint');
+
+    SLIDESHOW_IMAGES.forEach((filename, i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'slide-img-wrap' + (i === 0 ? ' active' : '');
+
+        // พื้นหลังเบลอจากรูปเดียวกัน — กันแถบขอบว่างเปล่าเวลารูป portrait ถูกแสดงแบบ contain บนจอ landscape
+        const bg = document.createElement('img');
+        bg.src = filename;
+        bg.className = 'slide-img-bg';
+        bg.alt = '';
+
+        const fg = document.createElement('img');
+        fg.src = filename;
+        fg.className = 'slide-img-fg';
+        fg.alt = 'Slideshow ' + (i + 1);
+
+        wrap.appendChild(bg);
+        wrap.appendChild(fg);
+        container.insertBefore(wrap, hintEl);
+    });
+}
+
+function startSlideshow() {
+    if (SLIDESHOW_IMAGES.length <= 1) return; // 0 หรือ 1 รูป ไม่ต้องวน
+    clearInterval(slideIntervalId);
+    slideIntervalId = setInterval(() => {
+        const wraps = screens.slideshow.querySelectorAll('.slide-img-wrap');
+        if (wraps.length === 0) return;
+        wraps[currentSlideIndex].classList.remove('active');
+        currentSlideIndex = (currentSlideIndex + 1) % wraps.length;
+        wraps[currentSlideIndex].classList.add('active');
+    }, SLIDE_DURATION_MS);
+}
+
+function stopSlideshow() {
+    clearInterval(slideIntervalId);
+    slideIntervalId = null;
+}
+
+// แตะที่ไหนก็ได้บนหน้าสไลด์ → ไปหน้ารอใส่ขวด
+function enterIdleFromSlideshow() {
+    showScreen('idle');
+}
+
+buildSlideshowDOM();
+startSlideshow(); // หน้าโหลดมาเริ่มที่ slideshow อยู่แล้ว (มี class "show" ใน HTML) — เริ่ม interval ให้ตรงกัน
+
+/* ฟัง path บนสุดของ kiosk_sessions — ตู้นี้ตรวจทุก session ที่ ESP32 สร้าง
+   (ในงานจริงถ้ามีหลายตู้ ควร scope ด้วย kiosk_id แยกแต่ละตู้) */
+const sessionsRef = rtdb.ref('kiosk_sessions');
+
+sessionsRef.on('child_added', (snap) => {
+    const session = snap.val();
+    const sessionId = snap.key;
+    // สนใจแค่ session ที่ "active" และยังไม่มีตัวที่กำลังแสดงอยู่
+    if (session.status === 'active' && !currentSessionId) {
+        attachToSession(sessionId);
+    }
+});
+
+sessionsRef.on('child_changed', (snap) => {
+    const session = snap.val();
+    const sessionId = snap.key;
+    if (sessionId !== currentSessionId) return;
+    handleSessionUpdate(session);
+});
+
+function attachToSession(sessionId) {
+    currentSessionId = sessionId;
+    currentSessionRef = rtdb.ref('kiosk_sessions/' + sessionId);
+    showScreen('counting'); // ตัดจาก slideshow หรือ idle ไปหน้านับ point ได้ทันที ไม่ว่าจะอยู่หน้าไหนอยู่ก่อน
+    startTimeoutWatcher();
+    currentSessionRef.once('value', (snap) => handleSessionUpdate(snap.val()));
+}
+
+function handleSessionUpdate(session) {
+    if (!session) return;
+
+    if (session.status === 'active') {
+        document.getElementById('pointCounter').textContent = session.points || 0;
+        document.getElementById('bottleTally').textContent = (session.bottle_count || 0) + ' ขวด';
+        resetTimeoutBar(); // มีขวดใหม่เข้ามา → รีเซ็ตแถบเวลา
+    }
+
+    if (session.status === 'waiting_scan') {
+        stopTimeoutWatcher();
+        showQR(session);
+    }
+
+    if (session.status === 'claimed') {
+        showScreen('claimed');
+        // ลบ session ทิ้งหลัง claim (กันข้อมูลค้าง)
+        currentSessionRef.remove();
+        setTimeout(resetKiosk, 4000); // โชว์ผลลัพธ์ 4 วิ แล้วกลับ idle เอง
+    }
+}
+
+/* ===== Timeout bar — โชว์ progress 10 วิ ก่อนตัดไป QR ===== */
+function startTimeoutWatcher() {
+    resetTimeoutBar();
+}
+
+function resetTimeoutBar() {
+    clearInterval(timeoutBarInterval);
+    const bar = document.getElementById('timeoutBar');
+    const start = Date.now();
+    bar.style.width = '100%';
+    timeoutBarInterval = setInterval(() => {
+        const elapsed = Date.now() - start;
+        const pct = Math.max(0, 100 - (elapsed / SESSION_TIMEOUT_MS) * 100);
+        bar.style.width = pct + '%';
+        if (pct <= 0) clearInterval(timeoutBarInterval);
+    }, 100);
+}
+
+function stopTimeoutWatcher() {
+    clearInterval(timeoutBarInterval);
+}
+
+/* ===== QR Code ===== */
+function showQR(session) {
+    showScreen('qr');
+    document.getElementById('qrPoints').textContent = session.points || 0;
+    document.getElementById('qrBottles').textContent = session.bottle_count || 0;
+
+    // QR เก็บ session_id เปล่าๆ — ฝั่ง donate.html ใช้กล้องสแกนในเว็บอ่านค่านี้ตรงๆ
+    // (เดิมเคยเป็น URL เต็มสำหรับ kiosk-claim.html — เก็บไฟล์นั้นไว้เป็นทางเลือกสำรอง)
+    // ใช้ Promise + .catch() ชัดเจน กัน error เงียบหายไปแบบไม่รู้ตัว (เคยเกิดจากการเรียกแบบ 3-args ไม่มี callback)
+    QRCode.toCanvas(
+        document.getElementById('qrCanvas'),
+        currentSessionId,
+        { width: 280, margin: 1, color: { dark: '#0a0f0d', light: '#ffffff' } }
+    ).catch((err) => {
+        console.error('QR generation failed:', err);
+    });
+
+    // ตั้ง auto-expire ถ้าไม่มีคน scan ภายในเวลาที่กำหนด
+    setTimeout(() => {
+        if (currentSessionId) {
+            currentSessionRef.once('value', (snap) => {
+                const s = snap.val();
+                if (s && s.status === 'waiting_scan') {
+                    currentSessionRef.update({ status: 'expired' });
+                    resetKiosk();
+                }
+            });
+        }
+    }, QR_EXPIRE_MS);
+}
+
+/* ===== Reset กลับหน้าสไลด์โชว์ (สถานะ "ไม่มีคนใช้งาน") พร้อมรับรอบใหม่ ===== */
+function resetKiosk() {
+    currentSessionId = null;
+    currentSessionRef = null;
+    stopTimeoutWatcher();
+    showScreen('slideshow');
+}
+
+/* ============================================
+   TEST MODE — จำลองขวดเข้าตู้ด้วยคีย์บอร์ด (ไม่ต้องมี ESP32 จริง)
+   กด T = จำลอง 1 ขวดเข้ามา (เขียนเข้า Realtime DB แบบเดียวกับที่ ESP32 ทำจริง)
+   ลบ block นี้ทิ้งได้เลยตอนต่อ ESP32 จริงแล้ว ไม่กระทบ logic อื่น
+   ============================================ */
+const TEST_POINTS_PER_BOTTLE = 10;
+let testBottleCount = 0;
+
+document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (key === 't') simulateTestBottle();
+    if (key === 'q') forceShowQRNow();
+});
+
+let testActiveSessionId = null; // session ที่ test mode กำลังเขียนอยู่ (แยกจาก currentSessionId ที่ฝั่งแสดงผลเป็นคนคุม)
+let testTimeoutId = null; // จับเวลาจำลอง ESP32 — ถ้าไม่มีขวดใหม่ใน 10 วิ ต้องเปลี่ยน status เป็น waiting_scan เอง
+
+function simulateTestBottle() {
+    const now = Math.floor(Date.now() / 1000);
+
+    // ถ้ายังไม่มี session ทดสอบที่เปิดอยู่ และฝั่งแสดงผลก็ไม่มี session active ด้วย → เริ่มอันใหม่
+    if (!testActiveSessionId && !currentSessionId) {
+        testBottleCount = 1;
+        testActiveSessionId = 'test_' + Math.random().toString(36).slice(2, 8);
+        rtdb.ref('kiosk_sessions/' + testActiveSessionId).set({
+            status: 'active',
+            bottle_count: testBottleCount,
+            points: testBottleCount * TEST_POINTS_PER_BOTTLE,
+            created_at: now,
+            last_bottle_at: now,
+            user_id: null
+        });
+        armTestTimeout();
+        return;
+    }
+
+    // มี session ทดสอบเปิดอยู่แล้ว → ++ ขวดต่อ (เหมือน ESP32 เจอขวดถัดไปก่อนหมดเวลา)
+    const targetId = testActiveSessionId || currentSessionId;
+    if (!targetId) return;
+    testBottleCount += 1;
+    rtdb.ref('kiosk_sessions/' + targetId).update({
+        bottle_count: testBottleCount,
+        points: testBottleCount * TEST_POINTS_PER_BOTTLE,
+        last_bottle_at: now
+    });
+    armTestTimeout(); // มีขวดใหม่ → รีเซ็ตนาฬิกาจับเวลาใหม่ (เหมือน ESP32 จริง)
+}
+
+// จำลองสิ่งที่ ESP32 ทำจริง: ถ้าไม่มีขวดใหม่เข้ามาภายใน SESSION_TIMEOUT_MS
+// ESP32 จะเปลี่ยน status เป็น "waiting_scan" เอง — โค้ดเดิมไม่มีส่วนนี้ ทำให้ค้างที่หน้านับ point ตลอดไปไม่มีวันไป QR
+function armTestTimeout() {
+    clearTimeout(testTimeoutId);
+    const sessionIdAtArm = testActiveSessionId || currentSessionId;
+    testTimeoutId = setTimeout(() => {
+        rtdb.ref('kiosk_sessions/' + sessionIdAtArm).update({ status: 'waiting_scan' });
+        testActiveSessionId = null; // ปิดงานฝั่ง test mode — ที่เหลือ flow ปกติ (showQR) จะรับช่วงต่อ
+    }, SESSION_TIMEOUT_MS);
+}
+
+// กด Q = ข้าม timeout ไปเลย บังคับ session ปัจจุบันเข้าสถานะ waiting_scan ทันที (gen QR ทันที ไม่ต้องรอ)
+function forceShowQRNow() {
+    const targetId = testActiveSessionId || currentSessionId;
+    if (!targetId) return; // ยังไม่มี session ไหนเปิดอยู่ — ต้องกด T อย่างน้อย 1 ครั้งก่อน
+    clearTimeout(testTimeoutId);
+    rtdb.ref('kiosk_sessions/' + targetId).update({ status: 'waiting_scan' });
+    testActiveSessionId = null;
+}
+
+// รีเซ็ตตัวนับขวดทดสอบเวลากลับสู่ slideshow (รอบใหม่ ต้องเริ่มนับจาก 0)
+const _originalResetKiosk = resetKiosk;
+resetKiosk = function () {
+    testBottleCount = 0;
+    testActiveSessionId = null;
+    clearTimeout(testTimeoutId);
+    _originalResetKiosk();
+};
+</script>
+</body>
+</html>
