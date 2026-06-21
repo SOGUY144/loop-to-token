@@ -443,26 +443,29 @@ function initMap() {
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
-    const greenIcon = L.divIcon({
-        className: '',
-        html: `<div style="width:32px;height:32px;background:linear-gradient(135deg,#15803d,#22c55e);border-radius:50% 50% 50% 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(22,163,74,0.4)"><span style="transform:rotate(45deg);font-size:14px">♻️</span></div>`,
-        iconSize: [32, 32], iconAnchor: [16, 28]
-    });
+    // ไอคอนหมุดแยกตามประเภทสถานที่ — ตามธีมรักษ์โลก/ถังขยะอัจฉริยะแยกประเภท
+    function makePin(emoji) {
+        return L.divIcon({
+            className: '',
+            html: `<div style="width:34px;height:34px;background:linear-gradient(135deg,#15803d,#34D399);border-radius:50% 50% 50% 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(22,163,74,0.45);border:2px solid rgba(255,255,255,0.9)"><span style="transform:rotate(45deg);font-size:15px">${emoji}</span></div>`,
+            iconSize: [34, 34], iconAnchor: [17, 30]
+        });
+    }
 
     const spots = [
-        { lat:13.7330, lng:100.5290, name:'สามย่านมิตรทาวน์', addr:'ถ.พระราม 4 ปทุมวัน', dist:'50 m' },
-        { lat:13.7383, lng:100.5322, name:'จุฬาฯ (หอประชุม)', addr:'ถ.พญาไท ปทุมวัน', dist:'200 m' },
-        { lat:13.7335, lng:100.5295, name:'Samyan CO-OP', addr:'ชั้น 2 สามย่านมิตรทาวน์', dist:'50 m' },
-        { lat:13.7310, lng:100.5310, name:'อุทยาน 100 ปี จุฬาฯ', addr:'ซ.จุฬา 5 ถ.พระราม 4', dist:'300 m' },
-        { lat:13.7355, lng:100.5340, name:'ตลาดสามย่าน', addr:'ซ.จุฬา 32-34 บรรทัดทอง', dist:'400 m' },
-        { lat:13.7350, lng:100.5275, name:'จามจุรีสแควร์', addr:'ถ.พญาไท ปทุมวัน', dist:'150 m' },
-        { lat:13.7395, lng:100.5305, name:'โรงเรียนสาธิตจุฬาฯ', addr:'ซ.จุฬา 11 ถ.พญาไท', dist:'350 m' },
-        { lat:13.7328, lng:100.5285, name:'MRT สามย่าน', addr:'ถ.พระราม 4 (ทางออก 2)', dist:'80 m' },
+        { lat:13.7330, lng:100.5290, name:'สามย่านมิตรทาวน์', addr:'ถ.พระราม 4 ปทุมวัน', dist:'50 m', pin: makePin('♻️') },
+        { lat:13.7383, lng:100.5322, name:'จุฬาฯ (หอประชุม)', addr:'ถ.พญาไท ปทุมวัน', dist:'200 m', pin: makePin('🏛️') },
+        { lat:13.7335, lng:100.5295, name:'Samyan CO-OP', addr:'ชั้น 2 สามย่านมิตรทาวน์', dist:'50 m', pin: makePin('🛍️') },
+        { lat:13.7310, lng:100.5310, name:'อุทยาน 100 ปี จุฬาฯ', addr:'ซ.จุฬา 5 ถ.พระราม 4', dist:'300 m', pin: makePin('🌳') },
+        { lat:13.7355, lng:100.5340, name:'ตลาดสามย่าน', addr:'ซ.จุฬา 32-34 บรรทัดทอง', dist:'400 m', pin: makePin('🗑️') },
+        { lat:13.7350, lng:100.5275, name:'จามจุรีสแควร์', addr:'ถ.พญาไท ปทุมวัน', dist:'150 m', pin: makePin('🏫') },
+        { lat:13.7395, lng:100.5305, name:'โรงเรียนสาธิตจุฬาฯ', addr:'ซ.จุฬา 11 ถ.พญาไท', dist:'350 m', pin: makePin('🏫') },
+        { lat:13.7328, lng:100.5285, name:'MRT สามย่าน', addr:'ถ.พระราม 4 (ทางออก 2)', dist:'80 m', pin: makePin('🚇') },
     ];
 
     const markers = spots.map(s =>
-        L.marker([s.lat, s.lng], { icon: greenIcon }).addTo(map)
-            .bindPopup(`<b style="font-family:Plus Jakarta Sans,sans-serif">${s.name}</b><br><small>${s.addr}</small><br><span style="color:#16a34a;font-weight:700">${s.dist}</span><br><a href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=walking" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:4px 10px;background:#16a34a;color:white;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none">นำทาง →</a>`)
+        L.marker([s.lat, s.lng], { icon: s.pin }).addTo(map)
+            .bindPopup(`<b style="font-family:Prompt,'Noto Sans Thai',sans-serif">${s.name}</b><br><small>${s.addr}</small><br><span style="color:#16a34a;font-weight:700">${s.dist}</span><br><a href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=walking" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:4px 10px;background:linear-gradient(135deg,#059669,#34D399);color:white;border-radius:99px;font-size:12px;font-weight:700;text-decoration:none">นำทาง →</a>`)
     );
 
     document.querySelectorAll('.loc-card').forEach((card, i) => {
