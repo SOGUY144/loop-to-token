@@ -21,19 +21,19 @@
 #include <ESP32Servo.h>
 
 // ===================== CONFIG: แก้ตรงนี้ก่อนอัพโหลด =====================
-#define WIFI_SSID       "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD   "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID       "th3buggy"
+#define WIFI_PASSWORD   "22222222"
 
-#define FIREBASE_HOST   "your-project-id-default-rtdb.asia-southeast1.firebasedatabase.app"
-#define FIREBASE_API_KEY "YOUR_FIREBASE_WEB_API_KEY"
+#define FIREBASE_HOST   "planning-with-ai-45b94-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define FIREBASE_API_KEY "AIzaSyC3BxsQHNaGeGFVlIoaIcar5Ns8xw5udO4"
 
 // ถ้าใช้ Firebase Auth แบบ Email/Password (แนะนำสำหรับงานจริง)
-#define FIREBASE_AUTH_EMAIL    "kiosk-device@loop2local.com"
-#define FIREBASE_AUTH_PASSWORD "YOUR_DEVICE_PASSWORD"
+#define FIREBASE_AUTH_EMAIL    "max.saidawat@gmail.com"
+#define FIREBASE_AUTH_PASSWORD "12341234"
 
 // ===================== PIN CONFIG =====================
-#define TRIG_PIN   5     // HC-SR04 Trig
-#define ECHO_PIN   18    // HC-SR04 Echo
+#define TRIG_PIN   26     // HC-SR04 Trig
+#define ECHO_PIN   25   // HC-SR04 Echo
 #define SERVO_PIN  13    // Servo signal pin
 
 // ===================== TUNABLE PARAMETERS =====================
