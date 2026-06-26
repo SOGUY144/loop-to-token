@@ -108,13 +108,13 @@ const DB = {
     // Record an approved donation: users/{uid}.points += pts and push to donationHistory
     async addDonation(userId, pts, label, confidence) {
         const entry = { label, pts, date: new Date().toISOString(), status: 'approved', confidence: confidence || 0 };
-        if (!USE_FIREBASE) { LocalDB.addDonation(userId, pts, entry); return; }
+        if (!USE_FIREBASE || !firebaseAuth?.currentUser) { LocalDB.addDonation(userId, pts, entry); return; }
         try { const { doc, updateDoc, arrayUnion, increment } = window._fb; await updateDoc(doc(firebaseDb, 'users', userId), { points: increment(pts), donationHistory: arrayUnion(entry) }); } catch (e) { console.error('addDonation', e); }
     },
     // Redeem a coupon: deduct points only if enough, push to redemptionHistory
     async redeem(userId, cost, label) {
         const entry = { label, pts: -cost, date: new Date().toISOString() };
-        if (!USE_FIREBASE) return LocalDB.redeem(userId, cost, entry);
+        if (!USE_FIREBASE || !firebaseAuth?.currentUser) return LocalDB.redeem(userId, cost, entry);
         try { const { doc, getDoc, updateDoc, arrayUnion, increment } = window._fb; const snap = await getDoc(doc(firebaseDb, 'users', userId)); if (!snap.exists() || (snap.data().points || 0) < cost) return false; await updateDoc(doc(firebaseDb, 'users', userId), { points: increment(-cost), redemptionHistory: arrayUnion(entry) }); return true; } catch (e) { console.error('redeem', e); return false; }
     },
     async getUsers() {
