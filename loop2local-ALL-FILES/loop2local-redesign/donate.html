@@ -296,6 +296,8 @@
     }
 
     async function confirmClaim() {
+        if (typeof blockGuestAction === 'function' && blockGuestAction('กรุณาเข้าสู่ระบบเพื่อรับคะแนน')) return;
+        
         showState('Checking');
 
         // หน้านี้เป็น PROTECTED_PAGES อยู่แล้ว (initAuthGuard บังคับ login ก่อนเข้าถึงได้)

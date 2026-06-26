@@ -172,6 +172,8 @@ function waitForAuthReady() {
 }
 
 async function confirmClaim() {
+    if (typeof blockGuestAction === 'function' && blockGuestAction('กรุณาเข้าสู่ระบบเพื่อรับคะแนน')) return;
+
     showState('Loading');
     const user = await DB.getCurrentUser();
     if (!user || !pendingSessionData) {
