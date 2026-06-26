@@ -101,7 +101,7 @@ const DB = {
     async getCurrentUser() {
         if (!USE_FIREBASE) return LocalDB.getCurrentUser();
         const u = firebaseAuth?.currentUser;
-        if (!u) return null;
+        if (!u) return LocalDB.getCurrentUser();
         try { const snap = await window._fb.getDoc(window._fb.doc(firebaseDb, 'users', u.uid)); if (snap.exists()) return { id: u.uid, ...snap.data(), email: u.email, photoURL: u.photoURL }; } catch (e) { console.error(e); }
         return null;
     },
@@ -426,7 +426,9 @@ function initAuthGuard() {
     };
 
     if (USE_FIREBASE && window._fb) {
-        window._fb.onAuthStateChanged(firebaseAuth, u => decide(!!u));
+        window._fb.onAuthStateChanged(firebaseAuth, u => {
+            decide(!!u || !!LocalDB.getSession());
+        });
     } else {
         decide(!!LocalDB.getSession());
     }
